@@ -1,0 +1,56 @@
+# name: test/sql/logqo.test
+# description: test logqo extension
+# group: [logqo]
+
+# Before we load the extension, this will fail
+statement error
+SELECT logqo_learning_status();
+----
+Catalog Error: Scalar Function with name logqo_learning_status does not exist!
+
+# Require statement will ensure this test is run with this extension loaded
+require logqo
+
+# Test the learning status function (should be enabled by default)
+query I
+SELECT logqo_learning_status();
+----
+true
+
+# Test enabling/disabling learning
+query I
+SELECT logqo_enable_learning(false);
+----
+false
+
+query I
+SELECT logqo_learning_status();
+----
+false
+
+query I
+SELECT logqo_enable_learning(true);
+----
+true
+
+query I
+SELECT logqo_learning_status();
+----
+true
+
+# Test executing a simple query to make sure the planner doesn't interfere
+query I
+SELECT 1;
+----
+1
+
+# Test a more complex query to ensure the optimizer integration works
+query I
+SELECT COUNT(*) FROM range(1000) t1 JOIN range(10) t2 ON t1.range = t2.range * 100;
+----
+10
+
+# Test the stats function
+query III
+SELECT * FROM logqo_stats() LIMIT 1;
+----
